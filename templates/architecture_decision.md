@@ -10,16 +10,16 @@ Same 6 public cases on both architectures:
 | Metric | Single agent | Staged / 2-agent |
 |---|---:|---:|
 | Cases passing minimum checks | 6/6 (100%) | 6/6 (100%) |
-| Avg latency | 4511.5 ms | 10745.6 ms |
+| Avg latency | 3620.4 ms | 14224.6 ms |
 | Avg LLM calls | 1.0 | 2.0 |
 | Avg tool calls | 4.0 | 4.0 |
 | Notable policy/grounding failures | 0 | 0 |
 
-Per-case (single | staged): PUB-01 3595ms | 13161ms; PUB-02 8028ms | 8227ms; PUB-03 4870ms | 16393ms; PUB-04 3038ms | 10737ms; PUB-05 1803ms | 6345ms; PUB-06 5731ms | 9608ms. Covers low-value approval, catalog overlap, source-code sensitivity, budget shortfall, incomplete+injection, API outage.
+Per-case (single | staged): PUB-01 8670.6ms | 13836.8ms; PUB-02 3701.0ms | 27842.1ms; PUB-03 1569.3ms | 14214.4ms; PUB-04 3186.4ms | 11324.1ms; PUB-05 1787.3ms | 9962.3ms; PUB-06 2807.8ms | 8167.8ms. Covers low-value approval, catalog overlap, source-code sensitivity, budget shortfall, incomplete+injection, API outage. Committed report: `evals/comparison_report.md` (2026-10-11).
 
 ## Trade-offs
 
-Staged adds a research-summary LLM call with no quality gain on the public set: +6.2s/case (+138%), 2x LLM cost and failure surface, same 4 deterministic tools. Deterministic approvals/risks/missing-info are enforced outside the LLM in both, with `human_review_required=True`, so the extra summarization did not change controls.
+Staged adds a research-summary LLM call with no quality gain on the public set: +10.6s/case (+293%), 2x LLM cost and failure surface, same 4 deterministic tools. Deterministic approvals/risks/missing-info are enforced outside the LLM in both, with `human_review_required=True`, so the extra summarization did not change controls. Category-only overlap now reports `possible_overlap_category_only` for human review; unknown vendors escalate via `vendor_unknown` instead of failing.
 
 ## Risks / limitations
 

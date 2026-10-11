@@ -182,15 +182,15 @@ Model: `nvidia/nemotron-3-super-120b-a12b:free`.
 | Metric | Single | Staged / 2-agent |
 |---|---:|---:|
 | Minimum checks passed | 6/6 (100%) | 6/6 (100%) |
-| Avg latency (ms) | 4511.5 | 10745.6 |
+| Avg latency (ms) | 3620.4 | 14224.6 |
 | Avg LLM calls | 1.0 | 2.0 |
 | Avg tool calls | 4.0 | 4.0 |
 
-Per-case: PUB-01 single PASS 3595ms / staged PASS 13161ms; PUB-02 8028ms / 8227ms; PUB-03 4870ms / 16393ms; PUB-04 3038ms / 10737ms; PUB-05 1803ms / 6345ms; PUB-06 5731ms / 9608ms.
+Per-case: PUB-01 single PASS 8670.6ms / staged PASS 13836.8ms; PUB-02 3701.0ms / 27842.1ms; PUB-03 1569.3ms / 14214.4ms; PUB-04 3186.4ms / 11324.1ms; PUB-05 1787.3ms / 9962.3ms; PUB-06 2807.8ms / 8167.8ms. Committed evidence: `evals/comparison_report.md` (raw CSVs are gitignored; reproduce via the commands above).
 
 ### Architecture comparison and ship decision
 
-**Ship single-agent baseline.** Both pass 6/6 with zero policy/grounding failures on the public set, but staged adds ~6.2s/case (+138%) and 2x LLM cost with no quality gain. Deterministic approvals/risks/missing-info are enforced outside the LLM with `human_review_required=True` in both. See `templates/architecture_decision.md` (158 words) and `docs/workflow.md` for the full evidence-backed memo and diagram.
+**Ship single-agent baseline.** Both pass 6/6 with zero policy/grounding failures on the public set, but staged adds ~10.6s/case (+293%) and 2x LLM cost with no quality gain. Deterministic approvals/risks/missing-info are enforced outside the LLM with `human_review_required=True` in both. Unknown vendors now escalate via `vendor_unknown` instead of crashing, and category-only matches report `possible_overlap_category_only` for human functional review. See `templates/architecture_decision.md` (158 words) and `docs/workflow.md` for the full evidence-backed memo and diagram.
 
 ### Assumptions and known limitations
 

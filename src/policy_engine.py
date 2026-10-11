@@ -42,7 +42,10 @@ def _parse_date(value: Any) -> date | None:
         return None
     if isinstance(value, date):
         return value
-    return date.fromisoformat(str(value))
+    try:
+        return date.fromisoformat(str(value).strip())
+    except (ValueError, TypeError, AttributeError):
+        return None
 
 
 def _review_is_expired(review_date: Any) -> bool:
@@ -150,7 +153,7 @@ def evaluate_policy(
     *,
     employee: Mapping[str, Any],
     budget: Mapping[str, Any],
-    vendor_registry: Mapping[str, Any],
+    vendor_registry: Mapping[str, Any] | None,
     vendor_risk: Mapping[str, Any] | None,
     vendor_risk_available: bool = True,
     existing_software: list[Mapping[str, Any]] | None = None,
@@ -207,14 +210,32 @@ def evaluate_policy(
         # §4 — deterministic financial threshold.
         approvals.extend(_threshold_approvals(cost))
 
-    # §3 — overlap is surfaced, never treated as automatic rejection.
-    if existing_software:
+    # §3 — overlap is surfaced with tiering, never automatic rejection.
+    # Exact product/vendor matches suggest likely duplication; category-only
+    # matches are possible alternatives needing human functional review.
+    exact_matches = [m for m in (existing_software or []) if m.get("_match_type") == "exact"]
+    category_matches = [m for m in (existing_software or []) if m.get("_match_type") == "category"]
+    if exact_matches:
+        flags.append("existing_tool_overlap")
+        reasons.append("Existing catalog software matches the requested product/vendor and may duplicate the need.")
+    elif category_matches:
+        flags.append("possible_overlap_category_only")
+        reasons.append("Category-only catalog matches exist; functional equivalence is unproven and needs human review.")
+    elif existing_software:
         flags.append("existing_tool_overlap")
         reasons.append("Existing catalog software may overlap with the requested use case.")
 
+    # Unknown vendor registry — never treat as safe; escalate.
+    if vendor_registry is None:
+        flags.append("vendor_unknown")
+        flags.append("security_review_required")
+        approvals.append("Security")
+        approvals.append("Procurement")
+        reasons.append("Vendor is not in the approved registry; registry controls cannot be verified.")
+
     # §5 — security review.
-    registry_status = _norm(vendor_registry.get("security_status"))
-    registry_review_date = vendor_registry.get("security_review_date")
+    registry_status = _norm((vendor_registry or {}).get("security_status"))
+    registry_review_date = (vendor_registry or {}).get("security_review_date")
     api_status = _norm((vendor_risk or {}).get("security_review_status"))
     api_review_date = (vendor_risk or {}).get("last_review_date")
 

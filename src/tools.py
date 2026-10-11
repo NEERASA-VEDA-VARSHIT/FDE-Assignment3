@@ -54,27 +54,61 @@ def search_software_catalog(
     category: str,
 ) -> list[dict]:
     catalog = load_software_catalog().fillna("")
-    fields = [product_name, vendor_name, category]
-    mask = False
-    for value in fields:
-        text = str(value or "").strip().lower()
-        if not text:
-            continue
-        mask = mask | catalog.apply(
-            lambda row: text in str(row["product_name"]).lower()
-            or text in str(row["vendor_name"]).lower()
-            or text in str(row["category"]).lower()
-            or text in str(row["notes"]).lower(),
-            axis=1,
-        )
-    return _native(catalog[mask].to_dict(orient="records"))
+    product_text = str(product_name or "").strip().lower()
+    vendor_text = str(vendor_name or "").strip().lower()
+    category_text = str(category or "").strip().lower()
+
+    def is_exact(row) -> bool:
+        row_product = str(row["product_name"]).lower()
+        row_vendor = str(row["vendor_name"]).lower()
+        # Exact tier: requested product/vendor substring matches catalog
+        # product/vendor (or vice versa). Category alone never counts as exact.
+        if product_text and (product_text in row_product or row_product in product_text):
+            return True
+        if vendor_text and (vendor_text in row_vendor or row_vendor in vendor_text):
+            return True
+        if product_text and (product_text in row_vendor or product_text in str(row["notes"]).lower()):
+            return True
+        return False
+
+    def is_category_only(row) -> bool:
+        if not category_text:
+            return False
+        row_category = str(row["category"]).lower()
+        return bool(category_text and (category_text in row_category or row_category in category_text))
+
+    results: list[dict] = []
+    for _, row in catalog.iterrows():
+        record = _native(row.to_dict())
+        if is_exact(row):
+            record["_match_type"] = "exact"
+            results.append(record)
+        elif is_category_only(row):
+            record["_match_type"] = "category"
+            results.append(record)
+    return results
 
 
 def get_vendor_security_status(vendor_name: str) -> ToolResult:
     registry = load_vendors()
     matches = registry[registry["vendor_name"] == vendor_name]
     if matches.empty:
-        raise KeyError(f"Unknown vendor: {vendor_name}")
+        # Unknown vendor: do not raise. Preserve the gap, try the API for
+        # whatever it returns, and force human escalation downstream.
+        try:
+            api_record: dict | None = get_vendor_risk(vendor_name)
+            api_error: str | None = None
+        except Exception as exc:
+            api_record = None
+            api_error = f"{type(exc).__name__}: {exc}"
+        error = f"VendorUnknown: {vendor_name} not in approved registry"
+        if api_error:
+            error = f"{error} | {api_error}"
+        return ToolResult(
+            name="get_vendor_security_status",
+            data={"registry": None, "risk_service": api_record},
+            error=error,
+        )
     registry_record = _native(matches.iloc[0].to_dict())
     try:
         api_record = get_vendor_risk(vendor_name)
@@ -94,7 +128,7 @@ def check_procurement_policy(
     request: dict,
     employee: dict,
     budget: dict,
-    vendor_registry: dict,
+    vendor_registry: dict | None,
     vendor_risk: dict | None,
     vendor_risk_available: bool,
     existing_software: list[dict],

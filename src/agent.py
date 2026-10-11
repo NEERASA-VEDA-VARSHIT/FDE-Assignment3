@@ -36,12 +36,28 @@ def _evidence_items(evidence: dict[str, Any]) -> list[EvidenceItem]:
         ))
 
     matches = evidence["catalog_matches"]
-    if matches:
+    exact = [r for r in matches if r.get("_match_type") == "exact"]
+    category_only = [r for r in matches if r.get("_match_type") == "category"]
+    if exact:
+        names = ", ".join(str(row["product_name"]) for row in exact[:5])
+        items.append(EvidenceItem(
+            source="software_catalog",
+            finding=f"Likely catalog overlap (exact product/vendor match): {names}. Human must confirm functional duplication.",
+            reference=str(exact[0].get("software_id")),
+        ))
+    elif category_only:
+        names = ", ".join(str(row["product_name"]) for row in category_only[:5])
+        items.append(EvidenceItem(
+            source="software_catalog",
+            finding=f"Possible category-only alternative (not proven duplicate): {names}. Functional equivalence needs human review.",
+            reference=str(category_only[0].get("software_id")),
+        ))
+    elif matches:
         names = ", ".join(str(row["product_name"]) for row in matches[:5])
         items.append(EvidenceItem(
             source="software_catalog",
             finding=f"Potential catalog overlap found: {names}.",
-            reference=str(matches[0]["software_id"]),
+            reference=str(matches[0].get("software_id")),
         ))
     else:
         items.append(EvidenceItem(
@@ -64,6 +80,13 @@ def _evidence_items(evidence: dict[str, Any]) -> list[EvidenceItem]:
         items.append(EvidenceItem(
             source="vendor_risk_service",
             finding="Vendor risk service evidence was unavailable and must not be treated as favorable.",
+            reference=str(req["vendor_name"]),
+        ))
+
+    if registry is None:
+        items.append(EvidenceItem(
+            source="vendor_registry",
+            finding=f"Vendor {req['vendor_name']} is not in the approved registry; controls are unverified and human review is required.",
             reference=str(req["vendor_name"]),
         ))
 
