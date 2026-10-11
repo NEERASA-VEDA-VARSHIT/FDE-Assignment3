@@ -28,15 +28,17 @@ Raw per-case CSVs (`evals/results_single.csv`, `evals/results_staged.csv`) are g
 | PUB-06 (REQ-1009) | Vendor-risk API unavailable | PASS 2807.8ms | PASS 8167.8ms |
 
 Notes:
+- Scope: the runner verifies minimum expectations (approvals, flags, missing fields, evidence counts, human review), not comprehensive recommendation correctness or evidence grounding. Grounding statements here are manual-review findings on the public set.
 - PUB-02 overlap is category-only (Design & Creative); policy now reports `possible_overlap_category_only` with human functional review instead of claiming duplication. The harness accepts it via the `overlap` substring, preserving the minimum check while staying honest.
 - PUB-06 outage is treated as non-favorable with `vendor_risk_unavailable` + Security review, never as approval.
 - PUB-05 injection is flagged via `prompt_injection_detected` and routed to human review.
 
 ## Robustness (beyond minimum checks)
 
-`python -m unittest discover -s tests` → 29 tests OK, including new `tests/test_robustness.py`:
+`python -m unittest discover -s tests` → 30 tests OK, including new `tests/test_robustness.py`:
 - unknown vendor returns `vendor_unknown` + Security/Procurement escalation, no `KeyError`
 - malformed vendor dates treated as expired, no crash
+- malformed non-numeric costs flagged via `invalid_cost` + missing-information, no crash
 - conflicting registry/API flagged via `conflicting_vendor_evidence`
 - category-only vs exact overlap tiering verified
 - recommendation correctness and evidence grounding are reviewed separately from pass rate; see decision memo.

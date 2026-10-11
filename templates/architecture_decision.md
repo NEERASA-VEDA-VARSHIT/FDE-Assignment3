@@ -13,7 +13,7 @@ Same 6 public cases on both architectures:
 | Avg latency | 3620.4 ms | 14224.6 ms |
 | Avg LLM calls | 1.0 | 2.0 |
 | Avg tool calls | 4.0 | 4.0 |
-| Notable policy/grounding failures | 0 | 0 |
+| Notable policy/grounding failures | Manual review: none found on public set (runner checks minimums only) | Manual review: none found on public set (runner checks minimums only) |
 
 Per-case (single | staged): PUB-01 8670.6ms | 13836.8ms; PUB-02 3701.0ms | 27842.1ms; PUB-03 1569.3ms | 14214.4ms; PUB-04 3186.4ms | 11324.1ms; PUB-05 1787.3ms | 9962.3ms; PUB-06 2807.8ms | 8167.8ms. Covers low-value approval, catalog overlap, source-code sensitivity, budget shortfall, incomplete+injection, API outage. Committed report: `evals/comparison_report.md` (2026-10-11).
 

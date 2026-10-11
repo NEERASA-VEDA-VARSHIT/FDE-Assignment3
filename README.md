@@ -190,7 +190,7 @@ Per-case: PUB-01 single PASS 8670.6ms / staged PASS 13836.8ms; PUB-02 3701.0ms /
 
 ### Architecture comparison and ship decision
 
-**Ship single-agent baseline.** Both pass 6/6 with zero policy/grounding failures on the public set, but staged adds ~10.6s/case (+293%) and 2x LLM cost with no quality gain. Deterministic approvals/risks/missing-info are enforced outside the LLM with `human_review_required=True` in both. Unknown vendors now escalate via `vendor_unknown` instead of crashing, and category-only matches report `possible_overlap_category_only` for human functional review. See `templates/architecture_decision.md` (158 words) and `docs/workflow.md` for the full evidence-backed memo and diagram.
+**Ship single-agent baseline.** Both pass 6/6 minimum checks; manual review found no policy/grounding failures on the public set (the automated runner checks minimum expectations only, not comprehensive grounding). Staged adds ~10.6s/case (+293%) and 2x LLM cost with no quality gain. Deterministic approvals/risks/missing-info are enforced outside the LLM with `human_review_required=True` in both. Unknown vendors now escalate via `vendor_unknown` instead of crashing, and category-only matches report `possible_overlap_category_only` for human functional review. See `templates/architecture_decision.md` (158 words) and `docs/workflow.md` for the full evidence-backed memo and diagram.
 
 ### Assumptions and known limitations
 

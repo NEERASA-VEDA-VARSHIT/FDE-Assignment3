@@ -117,6 +117,17 @@ def _privacy_requires_review(
     return bool(vendor_risk and vendor_risk.get("stores_data_outside_region"))
 
 
+def _parse_cost(value: Any) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return None
+    try:
+        return float(str(value).strip().replace(",", ""))
+    except (ValueError, TypeError, AttributeError):
+        return None
+
+
 def _legal_requires_review(
     request: Mapping[str, Any],
     vendor_registry: Mapping[str, Any] | None,
@@ -124,7 +135,8 @@ def _legal_requires_review(
 ) -> bool:
     cost = request.get("annual_cost_usd")
     is_new_vendor = _norm((vendor_registry or {}).get("procurement_status")) == "new"
-    if is_new_vendor and cost is not None and float(cost) >= 10_000:
+    parsed_cost = _parse_cost(cost)
+    if is_new_vendor and parsed_cost is not None and parsed_cost >= 10_000:
         return True
 
     if _norm((vendor_registry or {}).get("legal_terms_status")) not in {"approved", "standard"}:
@@ -196,19 +208,29 @@ def evaluate_policy(
 
     cost = request.get("annual_cost_usd")
     if cost is not None:
-        cost = float(cost)
+        parsed = _parse_cost(cost)
+        if parsed is None:
+            missing.append("annual cost or reasonable annual estimate (invalid format)")
+            flags.append("missing_information")
+            flags.append("invalid_cost")
+            reasons.append("Annual cost was supplied in an unparseable format; values must not be invented.")
+        else:
+            cost = parsed
 
-        # §2 — budget.
-        available = float(budget.get("available_usd", 0))
-        if cost > available:
-            flags.append("budget_insufficient")
-            approvals.append("Finance")
-            reasons.append(
-                f"Annual cost ${cost:,.2f} exceeds available department budget ${available:,.2f}."
-            )
+            # §2 — budget.
+            try:
+                available = float(str(budget.get("available_usd", 0)).replace(",", ""))
+            except (ValueError, TypeError, AttributeError):
+                available = 0.0
+            if cost > available:
+                flags.append("budget_insufficient")
+                approvals.append("Finance")
+                reasons.append(
+                    f"Annual cost ${cost:,.2f} exceeds available department budget ${available:,.2f}."
+                )
 
-        # §4 — deterministic financial threshold.
-        approvals.extend(_threshold_approvals(cost))
+            # §4 — deterministic financial threshold.
+            approvals.extend(_threshold_approvals(cost))
 
     # §3 — overlap is surfaced with tiering, never automatic rejection.
     # Exact product/vendor matches suggest likely duplication; category-only

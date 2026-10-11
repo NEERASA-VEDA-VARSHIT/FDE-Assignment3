@@ -136,6 +136,31 @@ class RobustnessTests(unittest.TestCase):
         )
         self.assertIn("existing_tool_overlap", policy.risk_flags)
 
+    def test_malformed_cost_does_not_crash_and_escalates(self):
+        for bad_cost in ["twenty thousand", "$12k-ish", {"amount": 5}, [100]]:
+            policy = evaluate_policy(
+                base_request(annual_cost_usd=bad_cost),
+                employee={"employee_id": "E001", "department": "Marketing"},
+                budget={"available_usd": 10000},
+                vendor_registry={
+                    "procurement_status": "New",
+                    "security_status": "Approved",
+                    "security_review_date": "2026-06-01",
+                    "legal_terms_status": "Approved",
+                },
+                vendor_risk={
+                    "security_review_status": "approved",
+                    "last_review_date": "2026-06-01",
+                    "stores_data_outside_region": False,
+                },
+                vendor_risk_available=True,
+                existing_software=[],
+            )
+            self.assertIn("invalid_cost", policy.risk_flags)
+            self.assertIn("missing_information", policy.risk_flags)
+            self.assertTrue(policy.human_review_required)
+            self.assertNotIn("budget_insufficient", policy.risk_flags)
+
     @patch("src.agent._request_json", return_value={"recommendation": "Hold", "next_step": "Route to human"})
     def test_agent_handles_unknown_vendor_without_exception(self, _mock):
         from src.tools import gather_evidence
