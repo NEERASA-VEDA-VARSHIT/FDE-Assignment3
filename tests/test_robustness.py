@@ -137,7 +137,7 @@ class RobustnessTests(unittest.TestCase):
         self.assertIn("existing_tool_overlap", policy.risk_flags)
 
     def test_malformed_cost_does_not_crash_and_escalates(self):
-        for bad_cost in ["twenty thousand", "$12k-ish", {"amount": 5}, [100]]:
+        for bad_cost in ["twenty thousand", "$12k-ish", {"amount": 5}, [100], float("nan"), float("inf"), float("-inf"), -1, "-5"]:
             policy = evaluate_policy(
                 base_request(annual_cost_usd=bad_cost),
                 employee={"employee_id": "E001", "department": "Marketing"},

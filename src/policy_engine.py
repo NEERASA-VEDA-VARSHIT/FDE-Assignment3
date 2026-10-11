@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import date
 from typing import Any, Mapping
+import math
 
 
 REFERENCE_DATE = date(2026, 9, 30)
@@ -123,9 +124,12 @@ def _parse_cost(value: Any) -> float | None:
     if isinstance(value, bool):
         return None
     try:
-        return float(str(value).strip().replace(",", ""))
+        parsed = float(str(value).strip().replace(",", ""))
     except (ValueError, TypeError, AttributeError):
         return None
+    if not math.isfinite(parsed) or parsed < 0:
+        return None
+    return parsed
 
 
 def _legal_requires_review(

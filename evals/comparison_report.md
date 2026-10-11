@@ -39,6 +39,7 @@ Notes:
 - unknown vendor returns `vendor_unknown` + Security/Procurement escalation, no `KeyError`
 - malformed vendor dates treated as expired, no crash
 - malformed non-numeric costs flagged via `invalid_cost` + missing-information, no crash
+- non-finite (`NaN`/`inf`) and negative costs rejected as invalid, no crash
 - conflicting registry/API flagged via `conflicting_vendor_evidence`
 - category-only vs exact overlap tiering verified
 - recommendation correctness and evidence grounding are reviewed separately from pass rate; see decision memo.
